@@ -1,1 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SpendSense — Expense Tracker</title>
 
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+
+  <!-- Chart.js library for the pie chart -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+  <style>
+    /* =============================================
+       RESET & BASE STYLES
+       ============================================= */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #0f1117;
+      color: #e0e6f0;
+      min-height: 100vh;
+    }
+
+    /* =============================================
+       HEADER / NAVBAR
+       ============================================= */
+    header {
+      background-color: #1a1f2e;
+      border-bottom: 2px solid #2a3044;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: 700;
+      color: #f5c542;
+    }
+
+    .logo span {
+      color: #ffffff;
+    }
+
+    #current-date {
+      font-size: 13px;
+      color: #6b7a99;
+    }
+
+    /* =============================================
+       MAIN LAYOUT - two columns on desktop
+       ============================================= */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+    }
+
+    /* =============================================
+       SUMMARY CARDS - spans full width
+       ============================================= */
+    .summary-row {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .card {
+      background-color: #1a1f2e;
+      border: 1px solid #2a3044;
+      border-radius: 12px;
+      padding: 18px 20px;
+    }
+
+    .card-label {
+      font-size: 12px;
+      color: #6b7a99;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .card-value {
+      font-size: 26px;
+      font-weight: 700;
+    }
+
+    .card-value.yellow { color: #f5c542; }
+    .card-value.green  { color: #34d399; }
+    .card-value.red    { color: #f87171; }
+    .card-value.blue   { color: #60a5fa; }
+
+    /* =============================================
+       LEFT PANEL - Add Transaction Form
+       ============================================= */
+    .left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .panel {
+      background-color: #1a1f2e;
+      border: 1px solid #2a3044;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #ffffff;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: #6b7a99;
+      margin-bottom: 5px;
+      margin-top: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      background-color: #0f1117;
+      border: 1px solid #2a3044;
+      border-radius: 8px;
+      color: #e0e6f0;
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: #f5c542;
+    }
+
+    input::placeholder {
+      color: #3d4a63;
+    }
+
+    select option {
+      background-color: #1a1f2e;
+    }
+
+    .type-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .type-btn {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #2a3044;
+      background: transparent;
+      color: #6b7a99;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .type-btn.is-expense {
+      background-color: rgba(248, 113, 113, 0.15);
+      border-color: #f87171;
+      color: #f87171;
+    }
+
+    .type-btn.is-income {
+      background-color: rgba(52, 211, 153, 0.15);
+      border-color: #34d399;
+      color: #34d399;
+    }
+
+    #add-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 12px;
+      background-color: #f5c542;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f1117;
+      cursor: pointer;
+    }
+
+    #add-btn:hover {
+      background-color: #ffffff;
+    }
+
+    .budget-bar-bg {
+      background-color: #0f1117;
+      border-radius: 6px;
+      height: 8px;
+      margin: 8px 0;
+      overflow: hidden;
+    }
+
+    .budget-bar-fill {
+      height: 8px;
+      border-radius: 6px;
+      background-color: #34d399;
+      width: 0%;
+      transition: width 0.5s ease, background-color 0.3s;
+    }
+
+    .budget-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #6b7a99;
+    }
+
+    .budget-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #edit-budget-btn {
+      font-size: 12px;
+      color: #f5c542;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: underline;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    /* =============================================
+       RIGHT PANEL
+       ============================================= */
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .chart-wrapper {
+      height: 220px;
+      position: relative;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .filter-btn {
+      padding: 5px 14px;
+      border-radius: 6px;
+      border: 1px solid #2a3044;
+      background: transparent;
+      color: #6b7a99;
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .filter-btn.active {
+      background-color: rgba(245, 197, 66, 0.12);
+      border-color: #f5c542;
+      color: #f5c542;
+    }
+
+    #search-box {
+      margin-left: auto;
+      width: 180px;
+      padding: 5px 10px;
+      font-size: 13px;
+    }
+
+    .tx-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+
+    .tx-list::-webkit-scrollbar { width: 4px; }
+    .tx-list::-webkit-scrollbar-thumb { background: #2a3044; border-radius: 2px; }
+
+    .tx-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background-color: #0f1117;
+      border: 1px solid #2a3044;
+      border-radius: 10px;
+    }
+
+    .tx-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background-color: #1a1f2e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .tx-info { flex: 1; }
+
+    .tx-name {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .tx-meta {
+      font-size: 11px;
+      color: #6b7a99;
+      margin-top: 2px;
+    }
+
+    .tx-amount {
+      font-size: 15px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .tx-amount.expense { color: #f87171; }
+    .tx-amount.income  { color: #34d399; }
+
+    .tx-delete {
+      background: none;
+      border: none;
+      color: #3d4a63;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 4px;
+    }
+
+    .tx-delete:hover {
+      color: #f87171;
+      background-color: rgba(248, 113, 113, 0.1);
+    }
+
+    .empty-msg {
+      text-align: center;
+      padding: 40px 0;
+      color: #3d4a63;
+      font-size: 14px;
+      line-height: 2;
+    }
+
+    /* =============================================
+       TOAST NOTIFICATION
+       ============================================= */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background-color: #1a1f2e;
+      border: 1px solid #2a3044;
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-size: 13px;
+      color: #e0e6f0;
+      z-index: 9999;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      pointer-events: none;
+    }
+
+    #toast.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* =============================================
+       RESPONSIVE
+       ============================================= */
+    @media (max-width: 768px) {
+      .container { grid-template-columns: 1fr; }
+      .summary-row { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Spend<span>Sense</span></div>
+  <div id="current-date"></div>
+</header>
+
+<div class="container">
+
+  <!-- SUMMARY CARDS -->
+  <div class="summary-row">
+    <div class="card">
+      <div class="card-label">Transactions</div>
+      <div class="card-value yellow" id="card-count">0</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Income</div>
+      <div class="card-value green" id="card-income">0</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Expenses</div>
+      <div class="card-value red" id="card-expense">0</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Balance</div>
+      <div class="card-value blue" id="card-balance">0</div>
+    </div>
+  </div>
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <div class="panel">
+      <div class="panel-title">Add Transaction</div>
+
+      <div class="type-row">
+        <button class="type-btn is-expense" id="btn-expense" onclick="selectType('expense')">- Expense</button>
+        <button class="type-btn" id="btn-income" onclick="selectType('income')">+ Income</button>
+      </div>
+
+      <label for="input-desc">Description</label>
+      <input type="text" id="input-desc" placeholder="e.g. Lunch at canteen" />
+
+      <label for="input-amount">Amount (Rs.)</label>
+      <input type="number" id="input-amount" placeholder="0" min="1" />
+
+      <label for="input-category">Category</label>
+      <select id="input-category">
+        <option value="food">Food</option>
+        <option value="transport">Transport</option>
+        <option value="shopping">Shopping</option>
+        <option value="health">Health</option>
+        <option value="education">Education</option>
+        <option value="entertainment">Entertainment</option>
+        <option value="bills">Bills</option>
+        <option value="salary">Salary</option>
+        <option value="other">Other</option>
+      </select>
+
+      <label for="input-date">Date</label>
+      <input type="date" id="input-date" />
+
+      <button id="add-btn" onclick="addTransaction()">Add Transaction</button>
+    </div>
+
+    <div class="panel">
+      <div class="budget-header">
+        <div class="panel-title" style="margin:0">Monthly Budget</div>
+        <button id="edit-budget-btn" onclick="editBudget()">Edit</button>
+      </div>
+      <div class="budget-bar-bg" style="margin-top:14px">
+        <div class="budget-bar-fill" id="budget-fill"></div>
+      </div>
+      <div class="budget-footer">
+        <span id="budget-spent">Rs.0 spent</span>
+        <span id="budget-limit">of Rs.10,000</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="panel">
+      <div class="panel-title">Spending by Category</div>
+      <div class="chart-wrapper">
+        <canvas id="pie-chart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">All Transactions</div>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+        <button class="filter-btn" onclick="setFilter('expense', this)">Expenses</button>
+        <button class="filter-btn" onclick="setFilter('income', this)">Income</button>
+        <input type="text" id="search-box" placeholder="Search..." oninput="showTransactions()" />
+      </div>
+      <div class="tx-list" id="tx-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+
+  // ============================================================
+  // STEP 1 - DATA
+  // We store transactions in an array.
+  // localStorage saves data in the browser so it is not lost
+  // when the page is refreshed.
+  // JSON.parse converts a saved string back into an array.
+  // JSON.stringify converts the array into a string to save it.
+  // ============================================================
+
+  var transactions = JSON.parse(localStorage.getItem("transactions") || "[]");
+  var monthlyBudget = parseFloat(localStorage.getItem("budget") || "10000");
+  var selectedType = "expense";   // tracks which button is active
+  var activeFilter = "all";       // tracks which filter is selected
+  var pieChart = null;            // will hold the Chart.js chart object
+
+
+  // ============================================================
+  // STEP 2 - CATEGORY ICONS AND LABELS
+  // Plain objects used to look up the icon/label for a category.
+  // ============================================================
+
+  var categoryIcons = {
+    food: "🍔", transport: "🚌", shopping: "🛍️",
+    health: "💊", education: "📚", entertainment: "🎮",
+    bills: "🧾", salary: "💼", other: "📦"
+  };
+
+  var categoryLabels = {
+    food: "Food", transport: "Transport", shopping: "Shopping",
+    health: "Health", education: "Education", entertainment: "Entertainment",
+    bills: "Bills", salary: "Salary", other: "Other"
+  };
+
+
+  // ============================================================
+  // STEP 3 - RUN WHEN PAGE LOADS
+  // DOMContentLoaded fires once the HTML is ready.
+  // ============================================================
+
+  document.addEventListener("DOMContentLoaded", function() {
+
+    // Show today's date in the header
+    var today = new Date();
+    document.getElementById("current-date").textContent =
+      today.toLocaleDateString("en-IN", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+
+    // Set the date input to today by default
+    // toISOString() gives "YYYY-MM-DDTHH:mm:ss.sssZ", we only want the date part
+    document.getElementById("input-date").value = today.toISOString().split("T")[0];
+
+    // Draw all parts of the UI
+    updateSummaryCards();
+    showTransactions();
+    drawPieChart();
+    updateBudgetBar();
+
+  });
+
+
+  // ============================================================
+  // STEP 4 - TOGGLE EXPENSE / INCOME TYPE
+  // ============================================================
+
+  function selectType(type) {
+    selectedType = type;
+
+    // Reset both buttons to their default style
+    document.getElementById("btn-expense").className = "type-btn";
+    document.getElementById("btn-income").className  = "type-btn";
+
+    // Activate the selected button
+    if (type === "expense") {
+      document.getElementById("btn-expense").className = "type-btn is-expense";
+    } else {
+      document.getElementById("btn-income").className = "type-btn is-income";
+    }
+  }
+
+
+  // ============================================================
+  // STEP 5 - ADD TRANSACTION
+  // Read inputs, validate, create an object, save, refresh UI.
+  // ============================================================
+
+  function addTransaction() {
+
+    // Read values from the form
+    var description = document.getElementById("input-desc").value.trim();
+    var amount      = parseFloat(document.getElementById("input-amount").value);
+    var category    = document.getElementById("input-category").value;
+    var date        = document.getElementById("input-date").value;
+
+    // Validate - stop and show error if something is wrong
+    if (description === "") {
+      showToast("Please enter a description");
+      return;
+    }
+    if (isNaN(amount) || amount <= 0) {
+      showToast("Please enter a valid amount");
+      return;
+    }
+    if (date === "") {
+      showToast("Please select a date");
+      return;
+    }
+
+    // Create the transaction object
+    var newTx = {
+      id:          Date.now(),   // unique number based on current time
+      description: description,
+      amount:      amount,
+      category:    category,
+      date:        date,
+      type:        selectedType
+    };
+
+    // Add to the front of the array (so newest shows first)
+    transactions.unshift(newTx);
+
+    // Save to localStorage
+    saveData();
+
+    // Refresh everything on the page
+    updateSummaryCards();
+    showTransactions();
+    drawPieChart();
+    updateBudgetBar();
+
+    // Clear description and amount fields
+    document.getElementById("input-desc").value   = "";
+    document.getElementById("input-amount").value = "";
+
+    showToast("Transaction added!");
+
+    // Warn if budget is nearly full
+    if (selectedType === "expense" && getMonthlyExpenses() > monthlyBudget * 0.9) {
+      setTimeout(function() { showToast("Warning: over 90% of budget used!"); }, 1500);
+    }
+  }
+
+
+  // ============================================================
+  // STEP 6 - DELETE A TRANSACTION
+  // Array.filter() returns a new array without the deleted item.
+  // ============================================================
+
+  function deleteTransaction(id) {
+    transactions = transactions.filter(function(tx) {
+      return tx.id !== id;
+    });
+    saveData();
+    updateSummaryCards();
+    showTransactions();
+    drawPieChart();
+    updateBudgetBar();
+    showToast("Transaction deleted");
+  }
+
+
+  // ============================================================
+  // STEP 7 - UPDATE SUMMARY CARDS
+  // Loop through transactions to calculate totals.
+  // ============================================================
+
+  function updateSummaryCards() {
+
+    // Get current month as "YYYY-MM" e.g. "2025-11"
+    var now = new Date();
+    var thisMonth = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+
+    var totalIncome  = 0;
+    var totalExpense = 0;
+
+    for (var i = 0; i < transactions.length; i++) {
+      var tx = transactions[i];
+
+      // Only include transactions from this month
+      if (tx.date.startsWith(thisMonth)) {
+        if (tx.type === "income") {
+          totalIncome += tx.amount;
+        } else {
+          totalExpense += tx.amount;
+        }
+      }
+    }
+
+    var balance = totalIncome - totalExpense;
+
+    document.getElementById("card-count").textContent   = transactions.length;
+    document.getElementById("card-income").textContent  = "Rs." + formatNumber(totalIncome);
+    document.getElementById("card-expense").textContent = "Rs." + formatNumber(totalExpense);
+    document.getElementById("card-balance").textContent =
+      (balance < 0 ? "-Rs." : "Rs.") + formatNumber(Math.abs(balance));
+
+    // Change balance color based on positive or negative
+    document.getElementById("card-balance").style.color = balance < 0 ? "#f87171" : "#60a5fa";
+  }
+
+
+  // ============================================================
+  // STEP 8 - SHOW TRANSACTIONS IN THE LIST
+  // Build HTML strings and inject them into the page.
+  // ============================================================
+
+  function showTransactions() {
+
+    var listEl    = document.getElementById("tx-list");
+    var searchVal = document.getElementById("search-box").value.toLowerCase();
+    var filtered  = [];
+
+    // Loop through all transactions and keep only matching ones
+    for (var i = 0; i < transactions.length; i++) {
+      var tx = transactions[i];
+
+      // Skip if filter does not match
+      if (activeFilter !== "all" && tx.type !== activeFilter) continue;
+
+      // Skip if search text does not match
+      if (searchVal !== "") {
+        var matchDesc = tx.description.toLowerCase().indexOf(searchVal) !== -1;
+        var matchCat  = categoryLabels[tx.category].toLowerCase().indexOf(searchVal) !== -1;
+        if (!matchDesc && !matchCat) continue;
+      }
+
+      filtered.push(tx);
+    }
+
+    // Show empty message if nothing to display
+    if (filtered.length === 0) {
+      listEl.innerHTML = '<div class="empty-msg">No transactions found.<br/>Add one above!</div>';
+      return;
+    }
+
+    // Build HTML for each transaction row
+    var html = "";
+
+    for (var j = 0; j < filtered.length; j++) {
+      var tx          = filtered[j];
+      var icon        = categoryIcons[tx.category]  || "📦";
+      var label       = categoryLabels[tx.category] || tx.category;
+      var amountClass = tx.type === "expense" ? "expense" : "income";
+      var sign        = tx.type === "expense" ? "-" : "+";
+
+      html += '<div class="tx-item">';
+      html +=   '<div class="tx-icon">' + icon + '</div>';
+      html +=   '<div class="tx-info">';
+      html +=     '<div class="tx-name">' + tx.description + '</div>';
+      html +=     '<div class="tx-meta">' + formatDate(tx.date) + ' - ' + label + '</div>';
+      html +=   '</div>';
+      html +=   '<div class="tx-amount ' + amountClass + '">' + sign + 'Rs.' + formatNumber(tx.amount) + '</div>';
+      html +=   '<button class="tx-delete" onclick="deleteTransaction(' + tx.id + ')">x</button>';
+      html += '</div>';
+    }
+
+    listEl.innerHTML = html;
+  }
+
+
+  // ============================================================
+  // STEP 9 - FILTER BUTTONS
+  // ============================================================
+
+  function setFilter(filter, buttonElement) {
+    activeFilter = filter;
+
+    // Remove active class from all filter buttons
+    var allBtns = document.querySelectorAll(".filter-btn");
+    for (var i = 0; i < allBtns.length; i++) {
+      allBtns[i].classList.remove("active");
+    }
+
+    // Add active class to the clicked button
+    buttonElement.classList.add("active");
+
+    showTransactions();
+  }
+
+
+  // ============================================================
+  // STEP 10 - PIE CHART using Chart.js
+  // ============================================================
+
+  function drawPieChart() {
+
+    var now = new Date();
+    var thisMonth = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+
+    // Count total spent per category this month
+    var categoryTotals = {};
+    for (var i = 0; i < transactions.length; i++) {
+      var tx = transactions[i];
+      if (tx.type === "expense" && tx.date.startsWith(thisMonth)) {
+        if (categoryTotals[tx.category] === undefined) {
+          categoryTotals[tx.category] = 0;
+        }
+        categoryTotals[tx.category] += tx.amount;
+      }
+    }
+
+    // Split into two arrays: labels and values
+    var labels  = [];
+    var amounts = [];
+    for (var cat in categoryTotals) {
+      labels.push(categoryLabels[cat] || cat);
+      amounts.push(categoryTotals[cat]);
+    }
+
+    var ctx = document.getElementById("pie-chart").getContext("2d");
+
+    // Destroy old chart before creating a new one
+    if (pieChart !== null) {
+      pieChart.destroy();
+    }
+
+    // Show placeholder if no expense data
+    if (amounts.length === 0) {
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.fillStyle = "#3d4a63";
+      ctx.font = "14px Poppins";
+      ctx.textAlign = "center";
+      ctx.fillText("No expenses this month", ctx.canvas.width / 2, ctx.canvas.height / 2);
+      return;
+    }
+
+    var colors = ["#f97316","#3b82f6","#a855f7","#10b981","#eab308","#ec4899","#ef4444","#22c55e","#64748b"];
+
+    pieChart = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: labels,
+        datasets: [{
+          data:            amounts,
+          backgroundColor: colors.slice(0, amounts.length),
+          borderWidth:     0,
+          hoverOffset:     6
+        }]
+      },
+      options: {
+        responsive:          true,
+        maintainAspectRatio: false,
+        cutout:              "60%",
+        plugins: {
+          legend: {
+            position: "right",
+            labels: { color: "#6b7a99", font: { family: "Poppins", size: 11 }, padding: 10, boxWidth: 10 }
+          },
+          tooltip: {
+            callbacks: { label: function(c) { return " Rs." + formatNumber(c.raw); } },
+            backgroundColor: "#1a1f2e", titleColor: "#e0e6f0", bodyColor: "#e0e6f0",
+            padding: 10, cornerRadius: 8
+          }
+        }
+      }
+    });
+  }
+
+
+  // ============================================================
+  // STEP 11 - BUDGET PROGRESS BAR
+  // ============================================================
+
+  function updateBudgetBar() {
+    var spent   = getMonthlyExpenses();
+    var percent = Math.min((spent / monthlyBudget) * 100, 100);
+    var fillEl  = document.getElementById("budget-fill");
+
+    fillEl.style.width = percent + "%";
+
+    // Change color based on how much has been spent
+    if (percent > 90) {
+      fillEl.style.backgroundColor = "#f87171";  // red
+    } else if (percent > 70) {
+      fillEl.style.backgroundColor = "#f5c542";  // yellow
+    } else {
+      fillEl.style.backgroundColor = "#34d399";  // green
+    }
+
+    document.getElementById("budget-spent").textContent = "Rs." + formatNumber(spent) + " spent";
+    document.getElementById("budget-limit").textContent = "of Rs." + formatNumber(monthlyBudget);
+  }
+
+  // Sum up all expenses in the current month
+  function getMonthlyExpenses() {
+    var now = new Date();
+    var thisMonth = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+    var total = 0;
+    for (var i = 0; i < transactions.length; i++) {
+      if (transactions[i].type === "expense" && transactions[i].date.startsWith(thisMonth)) {
+        total += transactions[i].amount;
+      }
+    }
+    return total;
+  }
+
+
+  // ============================================================
+  // STEP 12 - EDIT BUDGET
+  // prompt() opens a small browser dialog box asking for input.
+  // ============================================================
+
+  function editBudget() {
+    var input = prompt("Enter your monthly budget (Rs.):", monthlyBudget);
+    if (input === null) return;  // user clicked Cancel
+
+    var newBudget = parseFloat(input);
+    if (isNaN(newBudget) || newBudget <= 0) {
+      showToast("Please enter a valid number");
+      return;
+    }
+
+    monthlyBudget = newBudget;
+    localStorage.setItem("budget", monthlyBudget);
+    updateBudgetBar();
+    showToast("Budget updated to Rs." + formatNumber(monthlyBudget));
+  }
+
+
+  // ============================================================
+  // STEP 13 - TOAST NOTIFICATION
+  // Add the "visible" CSS class to show it, remove after 3 secs.
+  // ============================================================
+
+  var toastTimer = null;
+
+  function showToast(message) {
+    var toastEl = document.getElementById("toast");
+    toastEl.textContent = message;
+    toastEl.classList.add("visible");
+
+    if (toastTimer !== null) clearTimeout(toastTimer);
+
+    toastTimer = setTimeout(function() {
+      toastEl.classList.remove("visible");
+    }, 3000);
+  }
+
+
+  // ============================================================
+  // STEP 14 - HELPER FUNCTIONS
+  // ============================================================
+
+  function saveData() {
+    localStorage.setItem("transactions", JSON.stringify(transactions));
+  }
+
+  // Format a number with commas: 12345 becomes "12,345"
+  function formatNumber(num) {
+    return Number(num).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+
+  // Format "YYYY-MM-DD" into "12 Nov 2025"
+  function formatDate(dateString) {
+    var d = new Date(dateString + "T00:00:00");
+    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  }
+
+
+  // ============================================================
+  // BONUS - Press Enter in the form to submit
+  // ============================================================
+
+  document.getElementById("input-desc").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") addTransaction();
+  });
+
+  document.getElementById("input-amount").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") addTransaction();
+  });
+
+</script>
+</body>
+</html>
